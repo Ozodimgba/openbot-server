@@ -10,13 +10,17 @@ export class WalletService {
   }
 
   createWallet(): { publicKey: string; privateKey: string } {
-    //receive user profile instance
     const wallet = Keypair.generate();
 
     const publicKey = wallet.publicKey.toBase58();
     const privateKey = encode(wallet.secretKey);
 
-    // client.set('privateKey', privateKey);
     return { publicKey, privateKey };
   }
+
+  placeOrder(): any {}
+
+  createMarket(): any {}
+
+  closeMarket(): any {}
 }

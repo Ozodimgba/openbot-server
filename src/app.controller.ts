@@ -38,26 +38,62 @@ export class AppController {
     console.log(body);
   }
 
-  @Get('/create-wallet')
-  async createWallet(): Promise<UserPublicKey> {
-    //console.log(Buffer.from(this.configService.get<string>('IV')));
-    const password = this.configService.get<string>('PASSWORD');
-    const salt = this.configService.get<string>('SALT');
+  @Post('/create-wallet')
+  async createWallet(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Req() request: Request,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Body() body: any,
+  ): Promise<UserPublicKey> {
+    try {
+      //add the user ID instance
+      console.log(body);
+      //console.log(Buffer.from(this.configService.get<string>('IV')));
+      const password = this.configService.get<string>('PASSWORD');
+      const salt = this.configService.get<string>('SALT');
 
-    const wallet = this.walletService.createWallet();
-    const pKey: string = wallet.privateKey;
-    const pubKey: string = wallet.publicKey;
+      const wallet = this.walletService.createWallet();
+      const pKey: string = wallet.privateKey;
+      const pubKey: string = wallet.publicKey;
 
-    const iv = Buffer.from(this.configService.get<string>('IV'), 'hex');
-    const key = await generateKey(password, salt);
-    const encryptPrivKey = encrypt(pKey, key, iv);
+      const iv = Buffer.from(this.configService.get<string>('IV'), 'hex');
+      const key = await generateKey(password, salt);
+      const encryptPrivKey = encrypt(pKey, key, iv);
 
-    //store private key with user instance in seperate databases
-    client.set('user-id', encryptPrivKey);
-    //console.log('pkey: ' + pKey);
-    //console.log(encryptPrivKey);
+      // Key representing the Redis list
+      const userListKey = 'users';
 
-    return { publicKey: pubKey };
+      //hash the id
+      const id = this.appService.hash(body.id);
+      //store private key with user instance in separate databases
+      const userInstance = {
+        user: id,
+        pubKey,
+        privateKey: encryptPrivKey,
+      };
+
+      const jsonString = JSON.stringify(userInstance);
+      // console.log(this.appService.hash('user-id'));
+
+      //function to check if user is in the list already, if false push
+      await client
+        .rpush(userListKey, jsonString)
+        .then(() => {
+          console.log('User Instance pushed into the Redis list');
+        })
+        .catch((error) => {
+          console.error('Error pushing user into Redis list:', error);
+        });
+      //console.log('pkey: ' + pKey);
+      //console.log(encryptPrivKey);
+
+      return { publicKey: pubKey };
+    } catch (error) {
+      // Handle the error here
+      console.error('Error in createWallet:', error);
+      // You might want to throw the error again or handle it appropriately based on your application's requirements.
+      throw error;
+    }
   }
 
   @Get('/get-wallet')
