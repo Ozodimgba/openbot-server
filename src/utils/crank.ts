@@ -2,26 +2,27 @@
 import {
   Cluster,
   Connection,
+  Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   clusterApiUrl,
 } from '@solana/web3.js';
 import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor';
-import { RPC, authority, programId, sleep } from './index';
+import { RPC, programId } from './index';
 import { Logger } from 'tslog';
 import { error } from 'console';
 //change to local client
 import { MarketAccount, OpenBookV2Client } from './ts/client/src';
 
 // Assuming this is a function that you'll implement for your CrankService
-export async function cranker(
-  key: string,
+export default async function cranker(
+  keypair: Keypair,
   marketId: string,
-  consumeEventLimit: number,
+  consumeEventLimit?: number,
   user_cluster?: Cluster,
-): Promise<any> {
+): Promise<void> {
   // Implement your logic here
-  const keypair = new PublicKey(key);
+  const wallet = new Wallet(keypair);
   //convert key string to json add funtion to utils
   //const wallet = new Wallet();
 
@@ -34,45 +35,45 @@ export async function cranker(
     log.warn('Cluster is not set, using fallback devnet cluster');
   }
 
-  // const provider = new AnchorProvider(
-  //   new Connection(clusterApiUrl(user_cluster)),
-  //   wallet,
-  //   {
-  //     commitment: 'confirmed',
-  //   },
-  // );
+  const provider = new AnchorProvider(
+    new Connection(clusterApiUrl(user_cluster)),
+    wallet,
+    {
+      commitment: 'confirmed',
+    },
+  );
 
-  // log.info('Cranking by: ' + authority.publicKey.toBase58());
+  log.info('Cranking by: ' + wallet.publicKey.toBase58());
 
-  // const balance: number | any = await provider.connection.getBalance(
-  //   authority.publicKey,
-  // );
+  const balance: number | any = await provider.connection.getBalance(
+    wallet.publicKey,
+  );
 
-  // log.info('BALANCE: ' + balance / LAMPORTS_PER_SOL + ' SOL');
+  log.info('BALANCE: ' + balance / LAMPORTS_PER_SOL + ' SOL');
 
-  // const client = new OpenBookV2Client(provider, programId);
+  const client = new OpenBookV2Client(provider, programId);
 
-  // const marketPubkey = new PublicKey(marketId);
-  // log.info('CRANKING MARKET: ' + marketPubkey.toBase58());
+  const marketPubkey = new PublicKey(marketId);
+  log.info('CRANKING MARKET: ' + marketPubkey.toBase58());
 
-  // const marketObject = await client.getMarket(marketPubkey);
+  const marketObject = await client.getMarket(marketPubkey);
 
-  // if (!marketObject) {
-  //   throw 'No market';
-  // }
+  if (!marketObject) {
+    throw 'No market';
+  }
 
-  // const events = await client.getEventHeap(marketObject.eventHeap);
+  const events = await client.getEventHeap(marketObject.eventHeap);
 
-  // const remainingAccts: PublicKey[] =
-  //   await client.getAccountsToConsume(marketObject);
+  const remainingAccts: PublicKey[] =
+    await client.getAccountsToConsume(marketObject);
 
-  // if (remainingAccts.length > 0) {
-  //   const tx = await client.consumeEvents(
-  //     marketPubkey,
-  //     marketObject,
-  //     limit,
-  //     remainingAccts,
-  //   );
-  //   log.info('Signature: ' + tx);
-  // }
+  if (remainingAccts.length > 0) {
+    const tx = await client.consumeEvents(
+      marketPubkey,
+      marketObject,
+      limit,
+      remainingAccts,
+    );
+    log.info('Signature: ' + tx);
+  }
 }

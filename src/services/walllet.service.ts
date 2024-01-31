@@ -18,9 +18,7 @@ export class WalletService {
     return { publicKey, privateKey };
   }
 
-  placeOrder(): any {}
+  getBalance(): any {}
 
-  createMarket(): any {}
-
-  closeMarket(): any {}
+  changeWallet(): any {}
 }

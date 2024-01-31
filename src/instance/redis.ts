@@ -5,3 +5,5 @@ dotenv.config();
 
 const url: any = process.env.REDIS || '';
 export const client = new Redis(url);
+
+export type RedisClient = typeof client;

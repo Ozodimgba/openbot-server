@@ -74,7 +74,7 @@ export class AppController {
 
       const jsonString = JSON.stringify(userInstance);
       // console.log(this.appService.hash('user-id'));
-
+      await this.appService.setMainet(id, true).then;
       //function to check if user is in the list already, if false push
       await client
         .rpush(userListKey, jsonString)
